@@ -1,0 +1,13 @@
+html, body, #cesiumContainer { height: 100%; margin: 0; overflow: hidden; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; }
+
+/* 右上の簡易レイヤトグル */
+#layersPanel{
+  position:absolute; top:12px; right:12px; z-index:10;
+  background:rgba(255,255,255,.92); backdrop-filter:saturate(1.2) blur(6px);
+  border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.6;
+  box-shadow:0 6px 20px rgba(0,0,0,.18);
+  user-select:none;
+}
+#layersPanel label{ display:flex; gap:6px; align-items:center; }
+#layersPanel strong{ font-size:12px; opacity:.8; }

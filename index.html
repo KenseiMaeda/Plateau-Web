@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tsukuba 3D — PLATEAU + Cesium</title>
+
+  <!-- Cesium -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Widgets/widgets.css" rel="stylesheet"/>
+
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+
+  <!-- レイヤトグルUI（右上） -->
+  <div id="layersPanel">
+    <strong>Layers</strong><br/>
+    <label><input id="chk_tran"  type="checkbox" checked />道路 (tran)</label>
+    <label><input id="chk_trk"   type="checkbox" checked />徒歩道 (trk)</label>
+    <label><input id="chk_veg_pc" type="checkbox" checked />植生：植被 (veg PlantCover)</label>
+    <label><input id="chk_veg_sv" type="checkbox" checked />植生：単独木 (veg Solitary)</label>
+    <label><input id="chk_frn"   type="checkbox" checked />都市設備 (frn)</label>
+    <label><input id="chk_brid"  type="checkbox" checked />橋梁 (brid)</label>
+  </div>
+
+  <!-- 読み込み順が大事：config → utils → app → layers → ui -->
+  <script src="./config.js"></script>
+  <script src="./utils.js"></script>
+  <script src="./app.js"></script>
+  <script src="./layers.js"></script>
+  <script src="./ui.js"></script>
+</body>
+</html>
