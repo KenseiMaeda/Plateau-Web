@@ -1,3 +1,4 @@
+//utils.js
 // 便利クエリ
 window.$ = (sel) => document.querySelector(sel);
 
@@ -53,28 +54,37 @@ window.autoLiftToTerrainMulti = async function(viewer, tileset, {
     try { await viewer.terrainProvider.readyPromise; } catch(e) {}
   }
 
-  const centerCarto = Cesium.Ellipsoid.WGS84.cartesianToCartographic(tileset.boundingSphere.center);
+  // 3D Tilesの「現在のワールド中心」とそのCartographic（= 今の高さを含む）
+  const centerWorld = tileset.boundingSphere.center;
+  const centerCarto = Cesium.Ellipsoid.WGS84.cartesianToCartographic(centerWorld);
 
+  // 周囲をサンプリングして頑健な地形高さを推定
   const samplesCarto = [centerCarto];
   for (let r = 1; r <= rings; r++) {
     const radius = r * ringStepMeters;
     for (let i = 0; i < ptsPerRing; i++) {
       const theta = (2 * Math.PI * i) / ptsPerRing;
-      samplesCarto.push(displaceCartographic(centerCarto, radius * Math.cos(theta), radius * Math.sin(theta)));
+      const dx = radius * Math.cos(theta);
+      const dy = radius * Math.sin(theta);
+      samplesCarto.push(window.displaceCartographic(centerCarto, dx, dy));
     }
   }
-
   const sampled = await Cesium.sampleTerrainMostDetailed(viewer.terrainProvider, samplesCarto);
   const heights = sampled.map(p => (typeof p.height === "number" ? p.height : 0)).sort((a,b)=>a-b);
   const idx = Math.min(heights.length - 1, Math.max(0, Math.floor(heights.length * usePercentile)));
   const robustTerrainHeight = heights[idx];
 
-  const surface = Cesium.Ellipsoid.WGS84.cartographicToCartesian(
-    new Cesium.Cartographic(centerCarto.longitude, centerCarto.latitude, 0.0)
-  );
-  const onTerrain = Cesium.Ellipsoid.WGS84.cartographicToCartesian(
-    new Cesium.Cartographic(centerCarto.longitude, centerCarto.latitude, robustTerrainHeight + extra)
-  );
-  const translation = Cesium.Cartesian3.subtract(onTerrain, surface, new Cesium.Cartesian3());
-  tileset.modelMatrix = Cesium.Matrix4.fromTranslation(translation);
+  // 「今のモデル中心の高さ」と「目標高さ（地形+extra）」の差分だけ上げ下げ
+  const currentHeight = centerCarto.height;
+  const delta = (robustTerrainHeight + extra) - currentHeight; // ← 差分（m）
+
+  // ENUのUp方向に delta だけ移動する相対変換を、既存transformに乗せる
+  const enuFrame = Cesium.Transforms.eastNorthUpToFixedFrame(centerWorld);
+  const up = Cesium.Matrix4.getColumn(enuFrame, 2, new Cesium.Cartesian3()); // ENUのZ(Up)
+  const upUnit = Cesium.Cartesian3.normalize(up, new Cesium.Cartesian3());
+  const offsetVec = Cesium.Cartesian3.multiplyByScalar(upUnit, delta, new Cesium.Cartesian3());
+  const offsetMat = Cesium.Matrix4.fromTranslation(offsetVec);
+
+  // 既存transformを維持しつつオフセットを前掛け
+  tileset.modelMatrix = Cesium.Matrix4.multiply(offsetMat, tileset.modelMatrix, new Cesium.Matrix4());
 };
