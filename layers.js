@@ -1,63 +1,63 @@
 // ===============================================
 // layers.js — LODをUIで切替しても“浮かない”完成版
-// ・URLS は起動時/切替時に「単一URL」へ置換
-// ・道路等のZオフセットは二重適用しない（liftOnce）
-// ・TRAN/TRK の MVT は自動スキップして 3D Tiles にフォールバック
+// ・URLS は起動時/切替時に「単一URL」へ置換（常に 3D Tiles を1本だけ指す）
+// ・道路等のZオフセットは二重適用しない（liftOnce フラグ）
+// ・TRAN/TRK が MVT しか無い場合は自動で 3D Tiles へフォールバック
 // ===============================================
 
-// ===== 0) 起動時に使うLOD（UI初期値） =====
+// ===== 0) 起動時のLOD（UI初期値と合わせる） =====
 let currentLod = "LOD3"; // "LOD1" | "LOD2" | "LOD3"
 
-// ===== 1) URLSのLODテーブルを退避（不変の原本）=====
-window.URLS_LODS = JSON.parse(JSON.stringify(window.URLS)); // deep clone
+// ===== 1) URLSのLODテーブルを退避（不変の原本を保持）=====
+window.URLS_LODS = JSON.parse(JSON.stringify(window.URLS)); // deep clone して壊さない
 
-// ----- 1-1) 3D Tiles判定（MVTは除外） -----
+// ----- 1-1) 3D Tiles判定（MVTは除外するためのヘルパー） -----
 function is3DTiles(u) {
   return typeof u === "string" && u.endsWith("/tileset.json");
 }
 
-// ----- 1-2) 欲しいLODが無い場合の優先順 -----
+// ----- 1-2) 欲しいLODが無い場合の“次善の策”の優先順 -----
 const LOD_ORDER = {
   LOD3: ["LOD3","LOD2","LOD1"],
   LOD2: ["LOD2","LOD3","LOD1"],
   LOD1: ["LOD1","LOD2","LOD3"],
 };
 
-// ----- 1-3) (model, LOD) → 使える3D Tiles URLを選ぶ -----
+// ----- 1-3) (model, wantLod) → 利用可能な 3D Tiles URL を選ぶ -----
 function pickUrlForModel(model, wantLod) {
   const lods = window.URLS_LODS?.[model];
   if (!lods) return null;
   const order = LOD_ORDER[wantLod] || [wantLod,"LOD2","LOD1","LOD3"];
   for (const lod of order) {
     const u = lods[lod];
-    if (is3DTiles(u)) return u; // 3D Tilesのみ採用
+    if (is3DTiles(u)) return u; // 3D Tiles のみ採用（MVTはスキップ）
   }
-  return null;
+  return null; // 3D Tiles が見つからない場合（MVTしかない等）
 }
 
-// ----- 1-4) 指定LODを window.URLS.* の“単一URL”へ反映 -----
+// ----- 1-4) 指定LODで window.URLS.* を“単一のURL文字列”に更新 -----
 function applyLodToConstants(lod) {
   const models = ["BLDG","TRAN","TRK","VEG_PC","VEG_SV","FRN","BRID"];
   for (const m of models) {
     const url = pickUrlForModel(m, lod);
     if (!url) {
-      console.warn(`[${m}] LOD=${lod} で使える3D Tilesが見つかりません（MVTのみの可能性）`);
-      window.URLS[m] = null;
+      console.warn(`[${m}] LOD=${lod} で 3D Tiles が見つからない（MVTのみの可能性）`);
+      window.URLS[m] = null; // 読み込めないので無効化（MVT読みはこのスクリプトではしない）
     } else {
-      window.URLS[m] = url;
+      window.URLS[m] = url; // 以降は URLS.m は「単一URL」扱い
     }
   }
 }
 
-// ===== 2) “一度だけ”持ち上げる安全ラッパ（浮き対策）=====
+// ===== 2) “一度だけ”高さ補正を入れる安全ラッパ（浮き/多重適用防止）=====
 async function liftOnce(viewer, tileset, opts) {
-  if (!tileset || tileset._liftApplied) return;
+  if (!tileset || tileset._liftApplied) return; // 既に適用済みならスキップ
   await autoLiftToTerrainMulti(viewer, tileset, opts);
-  tileset._liftApplied = true; // 二重適用ガード
+  tileset._liftApplied = true; // 二重適用を防ぐフラグ
 }
 
-// ===== 3) LODごとの余白（extra）をモデル別に最適化 =====
-// まずは LOD3 の TRAN/TRK は 0m 推奨（舗装自体が高さを持つ想定）
+// ===== 3) LOD別・モデル別の高さ余白（extra） =====
+// LOD3 の TRAN/TRK は「舗装自体に高さがある前提」で 0m 推奨
 const EXTRA_BY_LOD = {
   LOD1: { TRAN: 0.2, TRK: 0.2, VEG_PC: 0.5, VEG_SV: 0.2, FRN: 0.3, BRID: 0.6 },
   LOD2: { TRAN: 0.1, TRK: 0.1, VEG_PC: 0.5, VEG_SV: 0.2, FRN: 0.3, BRID: 0.6 },
@@ -65,11 +65,14 @@ const EXTRA_BY_LOD = {
 };
 function extraFor(model) {
   const by = EXTRA_BY_LOD[currentLod] || {};
-  // 定義が無ければ従来のEXTRAをfallback
+  // 定義が無ければ従来の EXTRA をフォールバック
   return by[model] ?? (EXTRA?.[model] || 0);
 }
 
-// ===== 4) 各モデルの“従来どおり”ローダ（再読込にも使用）=====
+// ===== 4) 各モデルの“従来どおり”ローダ（再読込時にも使い回し）=====
+//   - 既存Tilesetがあれば除去
+//   - fromUrl → tune（軽量化）→ add → style（色統一）→ liftOnce（高さ補正）
+
 async function reloadBLDG() {
   if (!URLS.BLDG) return;
   if (window.ts_bldg) viewer.scene.primitives.remove(window.ts_bldg);
@@ -77,7 +80,7 @@ async function reloadBLDG() {
   const ts = await Cesium.Cesium3DTileset.fromUrl(URLS.BLDG);
   window.ts_bldg = tuneTileset(ts);
   viewer.scene.primitives.add(window.ts_bldg);
-  brightenButKeepTexture(window.ts_bldg, STYLES.BUILDING_TINT);
+  brightenButKeepTexture(window.ts_bldg, STYLES.BUILDING_TINT); // テクスチャ活かしつつ白寄せ
 }
 
 async function reloadTRAN() {
@@ -88,7 +91,7 @@ async function reloadTRAN() {
   window.ts_tran = tuneTileset(ts);
   viewer.scene.primitives.add(window.ts_tran);
   styleTileset(window.ts_tran, STYLES.TRAN.color, STYLES.TRAN.alpha);
-  await liftOnce(viewer, window.ts_tran, { extra: extraFor("TRAN") });
+  await liftOnce(viewer, window.ts_tran, { extra: extraFor("TRAN") }); // 一度きりの高さ補正
 }
 
 async function reloadTRK() {
@@ -107,7 +110,7 @@ async function reloadVEG_PC() {
   if (window.ts_veg_pc) viewer.scene.primitives.remove(window.ts_veg_pc);
 
   const ts = await Cesium.Cesium3DTileset.fromUrl(URLS.VEG_PC);
-  window.ts_veg_pc = tuneTileset(ts, { mssError: 10 });
+  window.ts_veg_pc = tuneTileset(ts, { mssError: 10 }); // 少し粗くして軽く
   viewer.scene.primitives.add(window.ts_veg_pc);
   styleTileset(window.ts_veg_pc, STYLES.VEG_PC.color, STYLES.VEG_PC.alpha);
   await liftOnce(viewer, window.ts_veg_pc, { extra: extraFor("VEG_PC") });
@@ -140,13 +143,13 @@ async function reloadBRID() {
   if (window.ts_brid) viewer.scene.primitives.remove(window.ts_brid);
 
   const ts = await Cesium.Cesium3DTileset.fromUrl(URLS.BRID);
-  window.ts_brid = tuneTileset(ts, { mssError: 8 });
+  window.ts_brid = tuneTileset(ts, { mssError: 8 }); // 橋はやや細かめ
   viewer.scene.primitives.add(window.ts_brid);
   styleTileset(window.ts_brid, STYLES.BRID.color, STYLES.BRID.alpha);
   await liftOnce(viewer, window.ts_brid, { extra: extraFor("BRID") });
 }
 
-// まとめて再読込
+// まとめて再読込（LOD変更時などに呼ぶ）
 async function reloadAll() {
   await Promise.all([
     reloadBLDG(),
@@ -159,7 +162,8 @@ async function reloadAll() {
   ]);
 }
 
-// ===== 5) 初期ロード（現在のLODを適用 → 従来どおり読み込み）=====
+// ===== 5) 初期ロード手順 =====
+// 1) currentLod を URLS.* に反映（“単一URL化”）→ 2) 各モデルを従来の流れで読み込み
 applyLodToConstants(currentLod);
 
 // 建物
@@ -211,18 +215,18 @@ Cesium.Cesium3DTileset.fromUrl(URLS.BRID).then(async (ts) => {
   await liftOnce(viewer, window.ts_brid, { extra: extraFor("BRID") });
 });
 
-// ===== 6) UI連動（任意）— <select id="lodSelect"> を置いた場合 =====
+// ===== 6) UI連動（任意）：<select id="lodSelect"> がある場合のハンドラ =====
 const lodSel = document.getElementById("lodSelect");
 if (lodSel) {
   lodSel.value = currentLod;
   lodSel.addEventListener("change", async (e) => {
     currentLod = e.target.value;        // "LOD1" | "LOD2" | "LOD3"
-    applyLodToConstants(currentLod);    // URLS.* を単一URLに差し替え
-    await reloadAll();                  // 従来の流れで読み直し（liftOnceで浮き防止）
+    applyLodToConstants(currentLod);    // URLS.* を「単一URL」に差し替える
+    await reloadAll();                  // まとめて再読込（liftOnceで多重持ち上げ防止）
   });
 }
 
-// === デバッグ用ログ（任意）===
+// === デバッグ用ログ（必要ならON）===
 // console.log("BLDG:", URLS.BLDG);
 // console.log("TRAN:", URLS.TRAN);
 // console.log("TRK :", URLS.TRK);

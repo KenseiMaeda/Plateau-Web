@@ -11,9 +11,11 @@ window.URLS = {
     LOD3:"https://assets.cms.plateau.reearth.io/assets/b8/952c86-b562-403b-a4be-e4d5ffb577ed/08220_tsukuba-shi_city_2023_citygml_2_op_bldg_3dtiles_lod3/tileset.json",
   },
   TRAN:{
+    LOCAL: `${location.origin}/trn/tileset.json`,
     LOD1:"https://assets.cms.plateau.reearth.io/assets/01/4e7c02-f1e0-4a00-ba03-31ab431b96a9/08220_tsukuba-shi_city_2023_citygml_2_op_tran_mvt_lod1/{z}/{x}/{y}.mvt",
     LOD2:"https://assets.cms.plateau.reearth.io/assets/01/4e7c02-f1e0-4a00-ba03-31ab431b96a9/08220_tsukuba-shi_city_2023_citygml_2_op_tran_mvt_lod1/{z}/{x}/{y}.mvt",
     LOD3:"https://assets.cms.plateau.reearth.io/assets/02/8f40d1-d7eb-4586-b8b9-07ab85809edf/08220_tsukuba-shi_city_2023_citygml_2_op_tran_3dtiles_lod3/tileset.json",
+
   },
   TRK:{
     LOD1:"https://assets.cms.plateau.reearth.io/assets/29/395dc5-7463-44d6-8f85-916648d90a38/08220_tsukuba-shi_city_2023_citygml_2_op_trk_mvt_lod1/{z}/{x}/{y}.mvt",

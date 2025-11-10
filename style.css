@@ -1,13 +1,50 @@
-html, body, #cesiumContainer { height: 100%; margin: 0; overflow: hidden; }
-body { font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; }
+html, body, #cesiumContainer { 
+  height: 100%; 
+  margin: 0; 
+  overflow: hidden; 
+}
+body { 
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; 
+}
 
 /* 右上の簡易レイヤトグル */
-#layersPanel{
-  position:absolute; top:12px; right:12px; z-index:10;
-  background:rgba(255,255,255,.92); backdrop-filter:saturate(1.2) blur(6px);
-  border-radius:12px; padding:10px 12px; font-size:13px; line-height:1.6;
-  box-shadow:0 6px 20px rgba(0,0,0,.18);
-  user-select:none;
+/* 左上に固定された縦並びのUIスタック */
+#uiStack {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* セレクタとパネルの間隔 */
 }
-#layersPanel label{ display:flex; gap:6px; align-items:center; }
-#layersPanel strong{ font-size:12px; opacity:.8; }
+
+/* LODセレクタの見た目（任意） */
+#lodSelect {
+  padding: 6px 8px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+#layersPanel {
+  position: static;     
+  right: auto;
+  top: auto;
+  z-index: auto;
+  background: rgba(255,255,255,.92);
+  backdrop-filter: saturate(1.2) blur(6px);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  user-select: none;
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 6px;
+}
+
+#layersPanel label { display: flex; gap: 6px; align-items: center; }
+#layersPanel strong { font-size: 12px; opacity: .8; }

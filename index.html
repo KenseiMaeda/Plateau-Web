@@ -2,38 +2,43 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>Tsukuba 3D — PLATEAU + Cesium</title>
+  <title>PLATEAU 3Dモデル（つくば市）</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect width='64' height='64' fill='%23007acc'/%3E%3Ctext x='10' y='44' font-size='34' fill='white'%3E3D%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./style.css" />
 
   <!-- Cesium -->
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Cesium.js"></script>
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.117/Build/Cesium/Widgets/widgets.css" rel="stylesheet"/>
 
-  <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css" />
+  <!-- cesium-mvt-imagery-provider -->
+  <script src="https://unpkg.com/cesium-mvt-imagery-provider@1.4.1/dist/cesium-mvt-imagery-provider.umd.js"></script>
+
 </head>
 <body>
   <div id="cesiumContainer"></div>
   
-  <!-- LODセレクタ（好きな場所に置いてOK） -->
-  <select id="lodSelect" style="position:absolute;z-index:10;top:10px;left:10px">
-    <option value="LOD1">LOD1</option>
-    <option value="LOD2">LOD2</option>
-    <option value="LOD3" selected>LOD3</option>
-  </select>
+  <div id="uiStack">
+    <!-- LODセレクタ -->
+    <select id="lodSelect">
+      <option value="LOD1">LOD1</option>
+      <option value="LOD2">LOD2</option>
+      <option value="LOD3" selected>LOD3</option>
+    </select>
 
-
-  <!-- レイヤトグルUI（右上） -->
-  <div id="layersPanel">
-    <strong>Layers</strong><br/>
-    <label><input id="chk_tran"  type="checkbox" checked />道路 (tran)</label>
-    <label><input id="chk_trk"   type="checkbox" checked />徒歩道 (trk)</label>
-    <label><input id="chk_veg_pc" type="checkbox" checked />植生：植被 (veg PlantCover)</label>
-    <label><input id="chk_veg_sv" type="checkbox" checked />植生：単独木 (veg Solitary)</label>
-    <label><input id="chk_frn"   type="checkbox" checked />都市設備 (frn)</label>
-    <label><input id="chk_brid"  type="checkbox" checked />橋梁 (brid)</label>
+    <!-- レイヤトグルUI（LODセレクタの“下”に配置される） -->
+    <div id="layersPanel">
+      <label><input id="chk_bldg"  type="checkbox" checked />建物</label>      
+      <label><input id="chk_tran"  type="checkbox" checked />道路</label>
+      <label><input id="chk_trk"   type="checkbox" checked />徒歩道</label>
+      <label><input id="chk_veg_pc" type="checkbox" checked />植被</label>
+      <label><input id="chk_veg_sv" type="checkbox" checked />単独木</label>
+      <label><input id="chk_frn"   type="checkbox" checked />都市設備</label>
+      <label><input id="chk_brid"  type="checkbox" checked />橋梁</label>
+    </div>
   </div>
 
-  <!-- 読み込み順が大事：config → utils → app → layers → ui -->
+  <!-- 読み込み順：config → utils → app → layers → ui -->
   <script src="./config.js"></script>
   <script src="./utils.js"></script>
   <script src="./app.js"></script>
