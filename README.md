@@ -36,7 +36,7 @@ python3 -m http.server 8080
 ブラウザで以下を開きます：
 http://localhost:8080
 
-🧱 ディレクトリ構成（Project Structure）
+## 🧱 ディレクトリ構成（Project Structure）
 
 📦 Project Root
 │
