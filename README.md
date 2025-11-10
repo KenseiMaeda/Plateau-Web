@@ -37,7 +37,7 @@ python3 -m http.server 8080
 http://localhost:8080
 
 ## 🧱 ディレクトリ構成（Project Structure）
-
+```
 📦 Project Root
 │
 ├─ index.html        # 画面の土台・UI配置・各JSファイルの読み込み
@@ -48,4 +48,4 @@ http://localhost:8080
 ├─ app.js            # Cesiumの初期化処理（地形・背景・カメラ設定）
 ├─ layers.js         # 道路/植生/橋梁などのレイヤー表示制御
 └─ ui.js             # UI操作イベント（LOD切替、チェックボックス制御など）
-
+```
